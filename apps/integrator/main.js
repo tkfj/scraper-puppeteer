@@ -1,12 +1,4 @@
-const log4js = require('log4js');
-const path = require('path');
-const logger = log4js.getLogger(path.basename(module.filename, '.js'));
-// logger.trace('Entering cheese testing');
-// logger.debug('Got cheese.');
-// logger.info('Cheese is Gouda.');
-// logger.warn('Cheese is quite smelly.');
-// logger.error('Cheese is too ripe!');
-// logger.fatal('Cheese was breeding ground for listeria.');
+const logger = require("@pkg/logger").getLogger("main");
 
 const {
   SQSClient,
@@ -14,6 +6,11 @@ const {
   DeleteMessageCommand,
   ChangeMessageVisibilityCommand
 } = require("@aws-sdk/client-sqs");
+
+const {
+  scraper_mf,
+  scraper_key_mf,
+ } = require("@app/scraper-mf");
 
 // --- 設定（環境変数で上書き可能） ---
 const REGION = process.env.SCRAPER_REGION || process.env.AWS_DEFAULT_REGION || "ap-northeast-1";
@@ -24,7 +21,8 @@ const HEARTBEAT_SECONDS = Number(process.env.HEARTBEAT_SECONDS || 30);   // 不�
 const IDLE_SHUTDOWN_SECONDS = Number(process.env.IDLE_SHUTDOWN_SECONDS || 300); // 自動終了するアイドル時間
 
 if (!QUEUE_URL) {
-  logger.error("SCRAPER_READ_QUEUE が未設定です。環境変数で指定してください。");
+  console.error("SCRAPER_READ_QUEUE が未設定です。環境変数で指定してください。");
+  logger.fatal("SCRAPER_READ_QUEUE が未設定です。環境変数で指定してください。");
   process.exit(1);
 }
 
@@ -41,11 +39,23 @@ async function runPuppeteerJob(payload) {
   // await browser.close();
 
   // デモ: 代わりに待つだけ
-  console.log(payload);
-  const sleepMs = payload?.sleepMs ?? 30000;
-  logger.info(`[JOB] start: ${JSON.stringify(payload)} (sleep ${sleepMs}ms)`);
-  await new Promise(r => setTimeout(r, sleepMs));
-  logger.info(`[JOB] done : ${JSON.stringify(payload)}`);
+  logger.trace(payload);
+  const scraper_key = payload.key;
+  if (! scraper_key) {
+    throw new Error("key not found")
+  }
+  logger.info(`[JOB] start: ${scraper_key}`);
+  try {
+    if (scraper_key == scraper_key_mf) {
+      scraper_mf()
+    }
+    else {
+      throw new Error(`unknown scraper: ${scraper_key}`)
+    }
+    logger.info(`[JOB] done: ${scraper_key}`);
+  } catch (e) {
+    logger.error("[JOB] error:", e);
+  }
 }
 
 let lastMessageAt = Date.now();
@@ -100,9 +110,6 @@ async function mainLoop() {
     logger.trace(msg.Body);
     try {
       const body = JSON.parse(msg.Body);
-      // SQS FIFO で content-based dedup を使うなら Body は安定化させて送ると◎
-      // Standard の場合でもここで冪等判定したい時はDynamoDB等で実装（今回は割愛）
-
       // 長時間ジョブに備え、定期的に可視性を延長
       hbTimer = setInterval(() => extendVisibility(receipt), HEARTBEAT_SECONDS * 1000);
 
@@ -125,12 +132,6 @@ async function mainLoop() {
 }
 
 if (require.main === module) {
-  const yaml = require('js-yaml');
-  const fs = require('fs');
-  //TODO ファイルがなかったらデフォルト
-  logconfig = yaml.load(fs.readFileSync('./logger.yaml'), 'utf-8');
-  log4js.configure(logconfig)
-
   process.on("SIGINT", () => { logger.warn("SIGINT"); stopping = true; });
   process.on("SIGTERM", () => { logger.warn("SIGTERM"); stopping = true; });
 

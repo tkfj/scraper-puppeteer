@@ -5,14 +5,15 @@
   "license": "",
   "author": "tk@fjworks.jp",
   "type": "commonjs",
-  "main": "main.js",
+  "packageManager": "npm@11.5.1",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "apps/scrapers/*"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "npm --workspace=@app/integrator start",
+    "site-mf": "node apps/integrator/main.js scraper-mf"
   },
-  "dependencies": {
-    "@aws-sdk/client-sqs": "^3.864.0",
-    "js-yaml": "^4.1.0",
-    "log4js": "^6.9.1",
-    "puppeteer": "^24.16.0"
-  }
+  "dependencies": {}
 }
