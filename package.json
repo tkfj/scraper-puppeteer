@@ -1,0 +1,18 @@
+{
+  "name": "js-puppeteer-mf",
+  "version": "0.1.0",
+  "description": "",
+  "license": "",
+  "author": "tk@fjworks.jp",
+  "type": "commonjs",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.864.0",
+    "js-yaml": "^4.1.0",
+    "log4js": "^6.9.1",
+    "puppeteer": "^24.16.0"
+  }
+}
