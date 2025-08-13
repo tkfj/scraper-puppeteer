@@ -1,0 +1,8 @@
+{
+  "name": "@app/mf-login",
+  "main": "main.js",
+  "scripts": { "start": "node main.js" },
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.864.0"
+  }
+}

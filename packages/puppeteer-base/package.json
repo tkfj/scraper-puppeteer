@@ -1,0 +1,7 @@
+{
+  "name": "@pkg/puppeteer-base",
+  "main": "main.js",
+  "dependencies": {
+    "puppeteer": "^24.16.0"
+  }
+}

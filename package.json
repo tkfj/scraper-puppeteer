@@ -13,6 +13,7 @@
   ],
   "scripts": {
     "start": "npm --workspace=@app/integrator start",
+    "mf-login": "node apps/mf-login/main.js",
     "site-mf": "node apps/integrator/main.js scraper-mf"
   },
   "dependencies": {}
