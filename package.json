@@ -12,7 +12,7 @@
     "apps/scrapers/*"
   ],
   "scripts": {
-    "start": "npm --workspace=@app/integrator start",
+    "start": "node apps/integrator/main.js",
     "mf-login": "node apps/mf-login/main.js",
     "site-mf": "node apps/integrator/main.js scraper-mf"
   },
