@@ -1,0 +1,43 @@
+// TODO これはあくまでサンプル
+//
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "integrator",
+      "program": "${workspaceFolder}/apps/integrator/main.js",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "env": {
+        "AWS_SHARED_CREDENTIALS_FILE": "${workspaceFolder}/.aws_local_credentials",
+        "AWS_CONFIG_FILE": "${workspaceFolder}/.aws_local_config",
+        "AWS_PROFILE": "assumed"
+      },
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "mf-login",
+      "program": "${workspaceFolder}/apps/mf-login/main.js",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "env": {
+      },
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "mf-aggregation_queue",
+      "program": "${workspaceFolder}/apps/scrapers/mf-aggregation_queue/main.js",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "env": {
+      },
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}

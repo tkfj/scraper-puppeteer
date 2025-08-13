@@ -1,5 +1,8 @@
 const logger = require("@pkg/logger").getLogger("main");
 
+const pup = require("@pkg/puppeteer-base")();
+
+
 const {
   SQSClient,
   ReceiveMessageCommand,
@@ -10,7 +13,7 @@ const {
 const {
   scraper_mf,
   scraper_key_mf,
- } = require("@app/scraper-mf");
+ } = require("../scrapers/mf-aggregation_queue/main");
 
 // --- 設定（環境変数で上書き可能） ---
 const REGION = process.env.SCRAPER_REGION || process.env.AWS_DEFAULT_REGION || "ap-northeast-1";

@@ -1,0 +1,6 @@
+{
+  "name": "@pkg/mf-base",
+  "main": "main.js",
+  "dependencies": {
+  }
+}
