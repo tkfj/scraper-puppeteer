@@ -6,6 +6,7 @@ const mf_base = require("@pkg/mf-base");
 const fs = require("fs");
 
 async function scraper_mf_aggregation_queue() {
+    //TODO mf_baseでログイン後のpageまで作ってもらう
     const launchOptions = puppeteer_base.getDefaultLaunchOptions();
     const {
         puppeteer,

@@ -1,8 +1,5 @@
 const logger = require("@pkg/logger").getLogger("main");
 
-const pup = require("@pkg/puppeteer-base")();
-
-
 const {
   SQSClient,
   ReceiveMessageCommand,
@@ -11,9 +8,9 @@ const {
 } = require("@aws-sdk/client-sqs");
 
 const {
-  scraper_mf,
-  scraper_key_mf,
- } = require("../scrapers/mf-aggregation_queue/main");
+  scraper_mf_aggregation_queue,
+  scraper_key_mf_aggregation_queue,
+ } = require("@app/scraper-mf-aggregation_queue");
 
 // --- 設定（環境変数で上書き可能） ---
 const REGION = process.env.SCRAPER_REGION || process.env.AWS_DEFAULT_REGION || "ap-northeast-1";
@@ -49,8 +46,8 @@ async function runPuppeteerJob(payload) {
   }
   logger.info(`[JOB] start: ${scraper_key}`);
   try {
-    if (scraper_key == scraper_key_mf) {
-      scraper_mf()
+    if (scraper_key == scraper_key_mf_aggregation_queue) {
+      await scraper_mf_aggregation_queue();
     }
     else {
       throw new Error(`unknown scraper: ${scraper_key}`)
