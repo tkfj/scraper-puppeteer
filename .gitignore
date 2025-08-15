@@ -3,3 +3,8 @@ node_modules/
 logger.yaml
 logs/
 .aws*
+.aws_local/
+*.tfvars
+terraform.tfstate
+terraform.tfstate.*
+.terraform/
