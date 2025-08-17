@@ -1,0 +1,34 @@
+name: Bake-Heavy-UserData-Windows
+description: Run heavy setup from S3 and sysprep
+schemaVersion: 1.0
+phases:
+  - name: build
+    steps:
+      - name: InstallAwsCliV2
+        action: ExecutePowerShell
+        inputs:
+          commands:
+            - '$ErrorActionPreference = "Stop"'
+            - 'Invoke-WebRequest "${awscli_installer_url}" -OutFile "$env:TMP\${awscli_installer_name}"'
+            - 'Start-Process msiexec.exe -ArgumentList "/i", "$env:TMP\${awscli_installer_name}", "/qn", "/norestart" -Wait'
+            - '$env:Path = "C:\Program Files\Amazon\AWSCLIV2;" + $env:Path'
+            - 'aws --version'
+      - name: InstallNodeJS
+        action: ExecutePowerShell
+        inputs:
+          commands:
+            - '$ErrorActionPreference = "Stop"'
+            - 'Invoke-WebRequest "${nodejs_installer_url}" -OutFile "$env:TMP\${nodejs_installer_name}"'
+            - 'Start-Process msiexec.exe -ArgumentList "/i", "$env:TMP\${nodejs_installer_name}", "/qn", "/norestart" -Wait'
+            - '$env:PATH = "C:\Program Files\nodejs;" + $env:PATH'
+            - 'node --version'
+            - 'npm --version'
+      - name: InstallGit
+        action: ExecutePowerShell
+        inputs:
+          commands:
+            - '$ErrorActionPreference = "Stop"'
+            - 'Invoke-WebRequest "${git_installer_url}" -OutFile "$env:TMP\${git_installer_name}"'
+            - 'Start-Process -FilePath "$env:TMP\${git_installer_name}" -ArgumentList "/VERYSILENT /NORESTART" -Wait'
+            - '$env:PATH = "C:\Program Files\Git\cmd;" + $env:PATH'
+            - 'git --version'
