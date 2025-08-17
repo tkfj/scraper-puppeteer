@@ -17,13 +17,12 @@ provider "aws" {
   shared_credentials_files = [ "${path.module}/.aws_local/credentials" ]
   shared_config_files      = [ "${path.module}/.aws_local/config" ]
   profile                  = var.aws_profile
-
-  # 明示したい場合は region も。config 側に書いてあれば省略可
-  region = var.region
+  region                   = var.region
 }
 
 locals {
   time_suffix = replace(timestamp(), ":", "") # for names
+  baker_version_us = replace(var.baker_version, ".", "_") # _区切りのバージョン表記(.を使えない名前やIDで使用)
 }
 
 ############################
@@ -70,34 +69,6 @@ resource "aws_iam_instance_profile" "imagebuilder_instance" {
   role = aws_iam_role.imagebuilder_instance.name
 }
 
-
-
-############################
-# S3 Read (List/Get) for the whole bucket
-############################
-resource "aws_iam_role_policy" "imagebuilder_s3_read" {
-  name = "ImageBuilderReadBakeBucket"
-  role = aws_iam_role.imagebuilder_instance.id
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Sid    = "ListBucket"
-        Effect = "Allow"
-        Action = ["s3:ListBucket"]
-        Resource = "arn:aws:s3:::${var.baker_script_s3_bucket}"
-      },
-      {
-        Sid    = "GetObjects"
-        Effect = "Allow"
-        Action = ["s3:GetObject"]
-        Resource = "arn:aws:s3:::${var.baker_script_s3_bucket}/*"
-      }
-    ]
-  })
-}
-
-
 ############################
 # Image Builder Component (Windows build step)
 ############################
@@ -129,11 +100,26 @@ resource "aws_imagebuilder_component" "baker_win" {
   data     = yamlencode(local.baker_win_doc)
 }
 
+data "aws_ami" "baker_parent_ami" {
+  filter {
+    name   = "image-id"
+    values = [var.baker_parent_ami_id]
+  }
+}
 resource "aws_imagebuilder_image_recipe" "recipe" {
-  name     = "${var.project}_${var.project_stage}_ami_recipe"
-  version  = var.baker_recipe_version
+  name     = "${var.project}_${var.project_stage}_ami_baker_recipe"
+  version  = var.baker_version
   parent_image = var.baker_parent_ami_id
 
+  dynamic block_device_mapping {
+    for_each = var.baker_root_volume_size_gib == null ? [] : [1]
+    content {
+      device_name = data.aws_ami.baker_parent_ami.root_device_name
+      ebs {
+        volume_size = var.baker_root_volume_size_gib
+      }
+    }
+  }
   component {
     component_arn = aws_imagebuilder_component.baker_win.arn
   }
@@ -143,7 +129,7 @@ resource "aws_imagebuilder_image_recipe" "recipe" {
 # Infrastructure Configuration
 ############################
 resource "aws_imagebuilder_infrastructure_configuration" "infra" {
-  name                       = "imagebuilder-infra-${local.time_suffix}"
+  name                       = "${var.project}_${var.project_stage}_ami_baker_infra-${local.baker_version_us}"
   instance_types             = [var.instance_type]
   subnet_id                  = var.baker_subnet_id
   security_group_ids         = var.baker_security_group_ids
@@ -163,20 +149,20 @@ resource "aws_imagebuilder_infrastructure_configuration" "infra" {
 # Distribution Configuration（このリージョンに AMI を配布）
 ############################
 resource "aws_imagebuilder_distribution_configuration" "dist" {
-  name = "imagebuilder-dist-${local.time_suffix}"
+  name = "${var.project}_${var.project_stage}_ami_baker_dist-${local.baker_version_us}"
 
   distribution {
     region = var.region
     ami_distribution_configuration {
       # name        = "baked-${local.time_suffix}-{{imagebuilder:buildVersion}}"
-      name        = "baked-{{ imagebuilder:buildDate }}-{{ imagebuilder:buildVersion }}"
-            description = "Baked from xxxx"
-      ami_tags = {
-        Purpose = "ami-bake"
-      }
-      launch_permission {
-        user_ids = [] # 共有不要なら空のまま
-      }
+      name        = "${var.project}_${var.project_stage}_ami_baked-{{ imagebuilder:buildVersion }}-{{ imagebuilder:buildDate }}"
+      # description = "Baked from xxxx"
+      # ami_tags = {
+      #   Purpose = "ami-bake"
+      # }
+      # launch_permission {
+      #   user_ids = [] # 共有不要なら空のまま
+      # }
     }
   }
 }
@@ -185,34 +171,24 @@ resource "aws_imagebuilder_distribution_configuration" "dist" {
 # Image Pipeline（手動キック／一度だけの即時ビルド）
 ############################
 resource "aws_imagebuilder_image_pipeline" "pipeline" {
-  name                             = "bake-from-lt-${local.time_suffix}"
+  name                             = "${var.project}_${var.project_stage}_ami_baker-${local.baker_version_us}"
   image_recipe_arn                 = aws_imagebuilder_image_recipe.recipe.arn
   infrastructure_configuration_arn = aws_imagebuilder_infrastructure_configuration.infra.arn
   distribution_configuration_arn   = aws_imagebuilder_distribution_configuration.dist.arn
   status                           = "ENABLED"
 
-  schedule {
-    schedule_expression = "cron(0 0 1 1 ? 1970)" # 事実上実行されないダミー（手動ビルド想定）
-    pipeline_execution_start_condition = "EXPRESSION_MATCH_AND_DEPENDENCY_UPDATES_AVAILABLE"
+  image_tests_configuration {
+    image_tests_enabled = !var.skip_image_tests
   }
-
   tags = { Purpose = "ami-bake" }
 }
 
 # 即時ビルドを 1 回走らせる
-resource "aws_imagebuilder_image" "onetime_build" {
+module "onetime_build" {
+  count = var.run_on_apply ? 1 : 0
+  source = "./modules/onetime_build"
+  region = var.region
   image_recipe_arn                 = aws_imagebuilder_image_recipe.recipe.arn
   infrastructure_configuration_arn = aws_imagebuilder_infrastructure_configuration.infra.arn
   distribution_configuration_arn   = aws_imagebuilder_distribution_configuration.dist.arn
-
-  depends_on = [aws_imagebuilder_image_pipeline.pipeline]
-}
-
-############################
-# Outputs
-############################
-output "baked_ami_id" {
-  description = "作成された AMI の ID（Distribution 後の AMI）"
-  value       = one(one(aws_imagebuilder_image.onetime_build.output_resources).amis).image
-  # distribution先リージョンは１つに固定しているのでOneで取得
 }

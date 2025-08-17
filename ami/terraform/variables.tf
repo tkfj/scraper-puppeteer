@@ -49,11 +49,11 @@ variable "instance_type" {
 #   description = "既存のセキュリティグループIDの配列"
 # }
 
-# variable "root_volume_size_gb" {
-#   type        = number
-#   description = "ルートボリュームサイズ（GB）。未指定ならデフォルトのまま"
-#   default     = 30
-# }
+variable "baker_root_volume_size_gib" {
+  type        = number
+  description = "ルートボリュームサイズ（GiB）。未指定ならデフォルトのまま"
+  default     = null
+}
 
 # variable "default_tags" {
 #   type        = map(string)
@@ -68,8 +68,17 @@ variable "instance_type" {
 
 #===== baker =====
 variable "baker_version" { type = string }
-variable "baker_recipe_version" { type = string }
-
+# apply 時に一度だけビルドを走らせるか
+variable "run_on_apply" {
+  type        = bool
+  description = "true で apply 時に 1 回だけ即時ビルド"
+  default     = false
+}
+variable "skip_image_tests" {
+  type        = bool
+  default     = false
+  description = "Image BuilderのImage tests（ビルド後テスト）をスキップする"
+}
 # 重い初期化処理をAMIイメージに焼く
 variable "baker_parent_ami_id" {
   description = "ベースにするAMI"
@@ -85,14 +94,6 @@ variable "baker_instance_type" {
   default     = "m6i.large"
   description = "ビルド用インスタンスタイプ（処理に応じて上げる）"
 }
-variable "baker_script_s3_bucket" {
-  description = "ユーザーデータ(スクリプト)を置いている既存S3バケット名"
-  type        = string
-}
-variable "baker_script_s3_fullpath" {
-  description = "重いユーザーデータ相当のビルドスクリプト（PowerShell）の S3 パス。例: s3://my-bucket/bake/setup.ps1"
-}
-
 variable "install_node_version" {
   description = "node.js インストーラのバージョン"
 }
