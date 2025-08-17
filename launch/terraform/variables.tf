@@ -1,19 +1,20 @@
 variable "aws_profile" {
   type        = string
   description = "利用する AWS プロファイル名（.aws_local/config / credentials と一致）"
-  default     = "myprofile"
 }
 
 variable "region" {
   type        = string
   description = "AWS region"
-  default     = "ap-northeast-1"
 }
 
 variable "project" {
   type        = string
   description = "Tag/Name prefix"
-  default     = "scrpu"
+}
+variable "project_stage" {
+  type        = string
+  description = "project stage e.g. dev, prd, ..."
 }
 
 variable "ami_id" {
@@ -24,7 +25,6 @@ variable "ami_id" {
 variable "instance_type" {
   type        = string
   description = "Instance type"
-  default     = "t3.large"
 }
 
 variable "key_name" {
@@ -55,4 +55,30 @@ variable "default_tags" {
   default = {
     Terraform = "true"
   }
+}
+
+
+variable "deploy_env_secret_id" {
+  type        = string
+  description = "環境変数を補完しているSecretsMangerのID"
+}
+variable "deploy_project_base" {
+  type        = string
+  description = "デプロイ先ベースディレクトリ"
+  default     = "C:/projects"
+}
+variable "deploy_project_name" {
+  type        = string
+  description = "デプロイ先ディレクトリ"
+  default     = "scraper-puppeteer"
+}
+variable "deploy_git_command" {
+  type        = string
+  description = "デプロイgitコマンド"
+  default     = "git clone https://github.com/tkfj/scraper-puppeteer.git"
+}
+variable "app_boot_command" {
+  type        = string
+  description = "アプリケーション起動コマンド"
+  default     = "Start-Process node -ArgumentList \"apps/integrator/main.js\""
 }

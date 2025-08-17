@@ -1,0 +1,36 @@
+<powershell>
+$ErrorActionPreference = "Stop"
+
+mkdir ${deploy_project_base}
+cd ${deploy_project_base}
+${deploy_git_command}
+cd ${deploy_project_name}
+npm install
+npx puppeteer browsers install chrome
+
+# 環境変数の展開
+$awsArgs = @(
+  'secretsmanager','get-secret-value',
+  '--secret-id', '${deploy_env_secret_id}',
+  '--query', 'SecretString',
+  '--output', 'text'
+)
+$secretJson = aws @awsArgs
+if (-not $secretJson -or $secretJson -eq 'None') {
+  throw "SecretString is empty."
+}
+try {
+  $obj = $secretJson | ConvertFrom-Json
+} catch {
+  throw "SecretString is not valid JSON (expected flat key/value): $_"
+}
+if (-not $obj.PSObject -or $obj.PSObject.Properties.Count -eq 0) {
+  throw "Secret JSON has no keys."
+}
+foreach ($p in $obj.PSObject.Properties) {
+  Set-Item -Path ("env:{0}" -f $p.Name) -Value $p.Value
+}
+
+# アプリケーションの起動
+${app_boot_command}
+</powershell>

@@ -1,53 +1,25 @@
 variable "aws_profile" {
   type        = string
   description = "利用する AWS プロファイル名（.aws_local/config / credentials と一致）"
-  default     = "myprofile"
 }
 
 variable "region" {
   type        = string
   description = "AWS region"
-  default     = "ap-northeast-1"
 }
 
 variable "project" {
   type        = string
   description = "Tag/Name prefix"
-  default     = "scrpu"
 }
 
 variable "project_stage" {
   type        = string
   description = "Project stage e.g. prd, dev, ..."
-  default     = "dev"
 }
-
-# variable "ami_id" {
-#   type        = string
-#   description = "Windows AMI ID（例: Windows Server 2019/2022など）"
-# }
-
-variable "instance_type" {
-  type        = string
-  description = "Instance type"
-  default     = "t3.large"
+variable "baker_vpc_id" {
+  type = string
 }
-
-# variable "key_name" {
-#   type        = string
-#   description = "既存のキーペア名（不要なら空に）"
-#   default     = null
-# }
-
-# variable "iam_instance_profile_name" {
-#   type        = string
-#   description = "既存のインスタンスプロファイル名（例: EC2SSMRole）"
-# }
-
-# variable "security_group_ids" {
-#   type        = list(string)
-#   description = "既存のセキュリティグループIDの配列"
-# }
 
 variable "baker_root_volume_size_gib" {
   type        = number
@@ -74,10 +46,10 @@ variable "run_on_apply" {
   description = "true で apply 時に 1 回だけ即時ビルド"
   default     = false
 }
-variable "skip_image_tests" {
+variable "image_tests_enabled" {
   type        = bool
-  default     = false
-  description = "Image BuilderのImage tests（ビルド後テスト）をスキップする"
+  default     = true
+  description = "Image BuilderのImage tests（ビルド後テスト）を実行する"
 }
 # 重い初期化処理をAMIイメージに焼く
 variable "baker_parent_ami_id" {
@@ -85,10 +57,6 @@ variable "baker_parent_ami_id" {
 }
 variable "baker_subnet_id" {
   description = "ビルド用インスタンスを起動する Subnet（NAT 越しにインターネットへ出られること）"
-}
-variable "baker_security_group_ids" {
-  type        = list(string)
-  description = "ビルド用インスタンスに付与する SG"
 }
 variable "baker_instance_type" {
   default     = "m6i.large"

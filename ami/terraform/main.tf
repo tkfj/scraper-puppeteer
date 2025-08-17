@@ -128,11 +128,25 @@ resource "aws_imagebuilder_image_recipe" "recipe" {
 ############################
 # Infrastructure Configuration
 ############################
+resource "aws_security_group" "imagebuilder" {
+  name   = "${var.project}_${var.project_stage}_sg_ami_baker-${local.baker_version_us}"
+  description = "for ${var.project}_${var.project_stage}_ami_baker_infra"
+  vpc_id = var.baker_vpc_id
+}
+
+resource "aws_security_group_rule" "egress_all" {
+  type              = "egress"
+  security_group_id = aws_security_group.imagebuilder.id
+  from_port = 0
+  to_port   = 0
+  protocol  = "-1"
+  cidr_blocks = ["0.0.0.0/0"]
+}
 resource "aws_imagebuilder_infrastructure_configuration" "infra" {
   name                       = "${var.project}_${var.project_stage}_ami_baker_infra-${local.baker_version_us}"
-  instance_types             = [var.instance_type]
+  instance_types             = [var.baker_instance_type]
   subnet_id                  = var.baker_subnet_id
-  security_group_ids         = var.baker_security_group_ids
+  security_group_ids         = [aws_security_group.imagebuilder.id]
   instance_profile_name      = aws_iam_instance_profile.imagebuilder_instance.name
   terminate_instance_on_failure = true
   key_pair                   = null
@@ -155,7 +169,7 @@ resource "aws_imagebuilder_distribution_configuration" "dist" {
     region = var.region
     ami_distribution_configuration {
       # name        = "baked-${local.time_suffix}-{{imagebuilder:buildVersion}}"
-      name        = "${var.project}_${var.project_stage}_ami_baked-{{ imagebuilder:buildVersion }}-{{ imagebuilder:buildDate }}"
+      name        = "${var.project}_${var.project_stage}_ami_baked-${var.baker_version}-{{ imagebuilder:buildVersion }}-{{ imagebuilder:buildDate }}"
       # description = "Baked from xxxx"
       # ami_tags = {
       #   Purpose = "ami-bake"
@@ -178,7 +192,7 @@ resource "aws_imagebuilder_image_pipeline" "pipeline" {
   status                           = "ENABLED"
 
   image_tests_configuration {
-    image_tests_enabled = !var.skip_image_tests
+    image_tests_enabled = var.image_tests_enabled
   }
   tags = { Purpose = "ami-bake" }
 }
@@ -191,4 +205,5 @@ module "onetime_build" {
   image_recipe_arn                 = aws_imagebuilder_image_recipe.recipe.arn
   infrastructure_configuration_arn = aws_imagebuilder_infrastructure_configuration.infra.arn
   distribution_configuration_arn   = aws_imagebuilder_distribution_configuration.dist.arn
+  image_tests_enabled = var.image_tests_enabled
 }

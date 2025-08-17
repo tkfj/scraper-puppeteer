@@ -19,7 +19,7 @@ provider "aws" {
 }
 
 resource "aws_launch_template" "win_awscli" {
-  name_prefix   = "${var.project}-win-awscli-"
+  name_prefix   = "${var.project}_${var.project_stage}_win-awscli-"
   image_id      = var.ami_id
   instance_type = var.instance_type
 
@@ -34,11 +34,14 @@ resource "aws_launch_template" "win_awscli" {
   # 既存のセキュリティグループIDを配列で指定
   vpc_security_group_ids = var.security_group_ids
 
-  # 起動時のサブネットは ASG 側や run-instances 側で指定する想定
-  # ここでは Launch Template 側では固定しない（必要なら network_interfaces を使用）
-
   # ユーザーデータ（PowerShell）を base64 で投入
-  user_data = filebase64("${path.module}/userdata.ps1")
+  user_data = base64encode(templatefile("${path.module}/launchuserdata.ps1.xml.tftpl", {
+    deploy_env_secret_id = var.deploy_env_secret_id
+    deploy_project_base  = var.deploy_project_base
+    deploy_project_name  = var.deploy_project_name
+    deploy_git_command   = var.deploy_git_command
+    app_boot_command     = var.app_boot_command
+  }))
 
   # 推奨: IMDSv2 有効化
   metadata_options {
