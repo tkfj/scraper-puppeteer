@@ -32,3 +32,25 @@ phases:
             - 'Start-Process -FilePath "$env:TMP\${git_installer_name}" -ArgumentList "/VERYSILENT /NORESTART" -Wait'
             - '$env:PATH = "C:\Program Files\Git\cmd;" + $env:PATH'
             - 'git --version'
+      - name: InstallCloudWatchAgent
+        action: ExecutePowerShell
+        inputs:
+          commands:
+            - '$ErrorActionPreference = "Stop"'
+            - '$CwAgentDir  = "$env:ProgramFiles\Amazon\AmazonCloudWatchAgent"'
+            - '$CfgDir      = "C:\ProgramData\Amazon\AmazonCloudWatchAgent"'
+            - '$CfgPath     = Join-Path $CfgDir "amazon-cloudwatch-agent.json"'
+            - '$Ctl = Join-Path $CwAgentDir "amazon-cloudwatch-agent-ctl.ps1"'
+            - 'if (!(Test-Path $Ctl)) {'
+            - '  $MsiUrl = "https://amazoncloudwatch-agent.s3.amazonaws.com/windows/amd64/latest/amazon-cloudwatch-agent.msi"'
+            - '  $Msi    = "$env:TEMP\amazon-cloudwatch-agent.msi"'
+            - '  Invoke-WebRequest -Uri $MsiUrl -OutFile $Msi'
+            - '  Start-Process msiexec.exe -ArgumentList "/i `"$Msi`" /qn" -Wait'
+            - '}'
+      - name: OptimizeStorage
+        action: ExecutePowerShell
+        inputs:
+          commands:
+            - '$ErrorActionPreference = "Stop"'
+            - 'defrag C: /U /V'
+            - 'Optimize-Volume -DriveLetter C -ReTrim -Verbose'

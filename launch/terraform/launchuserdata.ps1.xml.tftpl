@@ -1,5 +1,50 @@
 <powershell>
+## DON'T USE NON-ASCII CHARACTERS !!!
 $ErrorActionPreference = "Stop"
+
+$CfgDir  = "C:\ProgramData\Amazon\AmazonCloudWatchAgent"
+$CfgPath = Join-Path $CfgDir "amazon-cloudwatch-agent.json"
+New-Item -ItemType Directory -Path $CfgDir -Force | Out-Null
+@"
+{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "C:\\ProgramData\\Amazon\\EC2Launch\\log\\agent.log",
+            "log_group_name": "${cw_log_group_ec2launch}",
+            "log_stream_name": "{instance_id}/ec2launch-agent",
+            "timestamp_format": "%Y-%m-%d %H:%M:%S"
+          },
+          {
+            "file_path": "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Local\\Temp\\EC2Launch*\\output.tmp",
+            "log_group_name": "${cw_log_group_userdata_out}",
+            "log_stream_name": "{instance_id}/userdata-stdout"
+          },
+          {
+            "file_path": "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Local\\Temp\\EC2Launch*\\err.tmp",
+            "log_group_name": "${cw_log_group_userdata_err}",
+            "log_stream_name": "{instance_id}/userdata-stderr"
+          },
+          {
+            "file_path": "C:\\projects\\scraper-puppeteer\\logs\\app.log",
+            "log_group_name": "${cw_log_group_app_out}",
+            "log_stream_name": "{instance_id}/app-stdout"
+          },
+          {
+            "file_path": "C:\\projects\\scraper-puppeteer\\logs\\err.log",
+            "log_group_name": "${cw_log_group_app_err}",
+            "log_stream_name": "{instance_id}/app-stderr"
+          }
+        ]
+      }
+    }
+  }
+}
+"@ | Set-Content -Path $CfgPath
+$Ctl = "$env:ProgramFiles\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1"
+& "$Ctl" -a fetch-config -m ec2 -c "file:$CfgPath" -s
 
 mkdir ${deploy_project_base}
 cd ${deploy_project_base}
@@ -8,7 +53,6 @@ cd ${deploy_project_name}
 npm install
 npx puppeteer browsers install chrome
 
-# 環境変数の展開
 $awsArgs = @(
   'secretsmanager','get-secret-value',
   '--secret-id', '${deploy_env_secret_id}',
@@ -31,6 +75,5 @@ foreach ($p in $obj.PSObject.Properties) {
   Set-Item -Path ("env:{0}" -f $p.Name) -Value $p.Value
 }
 
-# アプリケーションの起動
 ${app_boot_command}
 </powershell>

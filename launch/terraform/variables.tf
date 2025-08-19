@@ -38,6 +38,10 @@ variable "iam_instance_profile_name" {
   description = "既存のインスタンスプロファイル名（例: EC2SSMRole）"
 }
 
+variable "vpc_id" {
+  description = "AutoScalingGroupのVPC（インターネットへ出られること）" #TODO 本来はサブネットを指定できるべき
+}
+
 variable "security_group_ids" {
   type        = list(string)
   description = "既存のセキュリティグループIDの配列"
@@ -57,11 +61,6 @@ variable "default_tags" {
   }
 }
 
-
-variable "deploy_env_secret_id" {
-  type        = string
-  description = "環境変数を補完しているSecretsMangerのID"
-}
 variable "deploy_project_base" {
   type        = string
   description = "デプロイ先ベースディレクトリ"
@@ -80,5 +79,27 @@ variable "deploy_git_command" {
 variable "app_boot_command" {
   type        = string
   description = "アプリケーション起動コマンド"
-  default     = "Start-Process node -ArgumentList \"apps/integrator/main.js\""
+  default     = "Start-Process node -ArgumentList \"apps/integrator/main.js\" -RedirectStandardOutput ./logs/app.log -RedirectStandardError ./logs/err.log"
+}
+
+#(仮)ログ
+variable "cw_log_group_ec2launch" {
+  type = string
+  default = "/ec2/EC2Launch/agent"
+}
+variable "cw_log_group_userdata_out" {
+  type = string
+  default = "/ec2/userdata/stdout"
+}
+variable "cw_log_group_userdata_err" {
+  type = string
+  default = "/ec2/userdata/stderr"
+}
+variable "cw_log_group_app_out" {
+  type = string
+  default = "/ec2/app/stdout"
+}
+variable "cw_log_group_app_err" {
+  type = string
+  default = "/ec2/app/stderr"
 }
