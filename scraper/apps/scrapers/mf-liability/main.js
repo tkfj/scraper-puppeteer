@@ -132,17 +132,16 @@ async function scraper_mf_liability() {
     dt_str=dt_str.replace(/(\d+)-(\d+)-(\d+)T(\d+):(\d+):(\d+).(\d+)Z/,'$1$2$3')
     // console.log(dt_str)
 
-    var outdict={
+    const outdict={
         "date":dt_str,
         "total_amount":v_ttl_amount,
         "break_down":v_break_downs,
         "detail":v_details,
     }
-
-    logger.info(JSON.stringify(outdict,null,2));
+    // logger.info(JSON.stringify(outdict,null,2));
     //fs.writeFileSync('./data_liability/data_liability_'+dt_str+'.json', JSON.stringify(outdict,null,2));
-
     logger.info('done');
+    return outdict
 }
 const scraper_key_mf_liability = "mf-liability";
 
@@ -150,7 +149,8 @@ if (require.main === module) {
     (async ()=>{
         logger.info("start");
         await scraper_mf_liability(
-        ).then(()=>{
+        ).then((r)=>{
+            logger.info(JSON.stringify(r,null,2))
             logger.info("done");
             process.exit(0); //TODO　これがなくてもきちんと終了させる(browser.closeが返ってこないのでどこかで何かを無限にwaitForなんちゃらしてるかも。)
         }).catch((e)=>{

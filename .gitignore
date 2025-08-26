@@ -3,4 +3,5 @@ node_modules/
 logger.yaml
 logs/
 .aws_local/
+.python-version
 mf_cookies.json
