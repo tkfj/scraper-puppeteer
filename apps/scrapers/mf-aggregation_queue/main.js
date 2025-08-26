@@ -35,10 +35,10 @@ async function scraper_mf_aggregation_queue() {
         throw Error("ログインしていません。mf-loginでログインしてCookieを保存してください。")
     }
 
-
     var eye_selector='#header .global-menu a[href$="/"]';
     var target_selector='a[href$="/aggregation_queue"';
-    var loding_selector='.loding"';
+    // var loding_selector='//li[contains(@class,"loding")]';
+    var loding_selector='li.loding';
 
     // 更新ボタンがある画面にいるか。なければ移動。
     const qq1 = await page.waitForSelector(target_selector,{timeout:1000}).catch(()=>{});
@@ -59,7 +59,7 @@ async function scraper_mf_aggregation_queue() {
         // });
     }
 
-    const lb = await page.waitForSelector(loding_selector,{timeout:1000}).catch(()=>{});
+    const lb = await page.waitForSelector(loding_selector,{visible: true, timeout:1000}).catch(()=>{});
     if(lb){
         logger.warn('ローディング中なのでスキップ');
         return;
@@ -73,14 +73,14 @@ async function scraper_mf_aggregation_queue() {
     await Promise.all([
         page.click(target_selector, {timeout:10000}),
     ]).then(()=>{
-        logger.info('done');
+        logger.info('click done');
     }).catch((err)=>{
-        logger.error('error:',err);
+        logger.error('click error:',err);
     });
 
-    const la=await page.waitForSelector(loding_selector,{timeout:30000}).catch(()=>{});
+    const la=await page.waitForSelector(loding_selector,{visible: true, timeout:30000}).catch(()=>{});
     if(la){
-        logger.info('done');
+        logger.info('loading start');
     }else{
         logger.warn('ローディングになりませんでしたあきらめます。。。。');
     }
