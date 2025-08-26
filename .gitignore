@@ -3,3 +3,4 @@ node_modules/
 logger.yaml
 logs/
 .aws_local/
+mf_cookies.json

@@ -1,43 +1,17 @@
 'use strict;'
 
 const logger = require("@pkg/logger").getLogger("scraper-mf-aggregation_queue")
-const puppeteer_base = require("@pkg/puppeteer-base");
 const mf_base = require("@pkg/mf-base");
-const fs = require("fs");
 
 async function scraper_mf_aggregation_queue() {
-    //TODO mf_baseでログイン後のpageまで作ってもらう
-    const launchOptions = puppeteer_base.getDefaultLaunchOptions();
     const {
         puppeteer,
         browser,
         page,
-    } = await puppeteer_base.launch(launchOptions);
-    logger.info('read cookies');
-    if (fs.existsSync(mf_base.mf_cookie_path)) {
-      const readcookies=JSON.parse(fs.readFileSync(mf_base.mf_cookie_path, 'utf-8'));
-      for (let cookie of readcookies) {
-        await page.setCookie(cookie);
-      }
-      logger.info('cookies found');
-    }
-    else {
-      logger.warn('cookies not found');
-    }
-
-    await Promise.all([
-        page.goto(mf_base.mf_url, {waitUntil: ['load','networkidle2']})
-    ]);
-
-    if(await mf_base.is_mf_loggedin(page, puppeteer)) {
-        //nop
-    } else {
-        throw Error("ログインしていません。mf-loginでログインしてCookieを保存してください。")
-    }
+    } = await mf_base.launch_and_loggin();
 
     var eye_selector='#header .global-menu a[href$="/"]';
     var target_selector='a[href$="/aggregation_queue"';
-    // var loding_selector='//li[contains(@class,"loding")]';
     var loding_selector='li.loding';
 
     // 更新ボタンがある画面にいるか。なければ移動。
