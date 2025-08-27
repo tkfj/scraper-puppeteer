@@ -1,10 +1,13 @@
 import json
 import boto3
 import datetime
+import os
 
 TZ = datetime.timezone(datetime.timedelta(hours=9))
 
 def main(event:any):
+    s3_bucket = os.environ['SCRAPER_STORE_BUCKET']
+    s3_key_base = os.environ.get('SCRAPER_STORE_KEY_BASE','')
     dt_ingest = datetime.datetime.now(TZ)
     str_dt_asof = event['date']
     dt_asof = datetime.datetime.strptime(str_dt_asof, '%Y%m%d').replace(tzinfo=TZ)
@@ -18,8 +21,8 @@ def main(event:any):
     print(f'{b_event=}')
     s3cli = boto3.client('s3')
     s3cli.put_object(**{
-        'Bucket' : 'fjworks-dev',
-        'Key' : f'test/0_bronze/liabilities/ingest={str_dt_ingest}/liabilities_{str_dt_asof}.json',
+        'Bucket' : s3_bucket,
+        'Key' : f'{s3_key_base}0_bronze/liabilities/ingest={str_dt_ingest}/liabilities_{str_dt_asof}.json',
         'ContentType': 'application/json',
         'Body': b_event,
     })

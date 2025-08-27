@@ -10,7 +10,12 @@ const {
 const {
   scraper_mf_aggregation_queue,
   scraper_key_mf_aggregation_queue,
- } = require("@app/scraper-mf-aggregation_queue");
+} = require("@app/scraper-mf-aggregation_queue");
+
+const {
+  scraper_mf_liability,
+  scraper_key_mf_liability,
+} = require("@app/scraper-mf-liability");
 
 // --- 設定（環境変数で上書き可能） ---
 const REGION = process.env.SCRAPER_REGION || process.env.AWS_DEFAULT_REGION || "ap-northeast-1";
@@ -28,17 +33,7 @@ if (!QUEUE_URL) {
 
 const sqs = new SQSClient({ region: REGION });
 
-// 擬似ジョブ（ここで Puppeteer を呼び出す想定）
 async function runPuppeteerJob(payload) {
-  // 例:
-  // const puppeteer = require('puppeteer');
-  // const browser = await puppeteer.launch({ executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", headless: true });
-  // const page = await browser.newPage();
-  // await page.goto(payload.url, { waitUntil: "networkidle0" });
-  // ... 作業 ...
-  // await browser.close();
-
-  // デモ: 代わりに待つだけ
   logger.trace(payload);
   const scraper_key = payload.key;
   if (! scraper_key) {
@@ -48,6 +43,10 @@ async function runPuppeteerJob(payload) {
   try {
     if (scraper_key == scraper_key_mf_aggregation_queue) {
       await scraper_mf_aggregation_queue();
+    }
+    else if (scraper_key == scraper_key_mf_liability) {
+      const liabilities = await scraper_mf_liability();
+      //TODO call lambda 
     }
     else {
       throw new Error(`unknown scraper: ${scraper_key}`)
@@ -132,8 +131,10 @@ async function mainLoop() {
 }
 
 if (require.main === module) {
-  process.on("SIGINT", () => { logger.warn("SIGINT"); stopping = true; });
-  process.on("SIGTERM", () => { logger.warn("SIGTERM"); stopping = true; });
+  process.on("SIGINT",   () => { logger.warn("SIGINT");   stopping = true; });
+  process.on("SIGBREAK", () => { logger.warn("SIGBREAK"); stopping = true; });
+  process.on("SIGHUP",   () => { logger.warn("SIGHUP");   stopping = true; });
+  process.on("SIGTERM",  () => { logger.warn("SIGTERM");  stopping = true; });
 
   mainLoop().catch(err => {
     logger.fatal("[FATAL]", err);
