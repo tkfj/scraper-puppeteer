@@ -59,6 +59,7 @@ async function runPuppeteerJob(payload) {
 
 let lastMessageAt = Date.now();
 let stopping = false;
+let inFlight;
 
 function shouldShutdownForIdle() {
   return (Date.now() - lastMessageAt) / 1000 >= IDLE_SHUTDOWN_SECONDS;
@@ -78,12 +79,13 @@ async function extendVisibility(ReceiptHandle) {
 }
 
 async function receiveOne() {
+  inFlight = new AbortController()
   const res = await sqs.send(new ReceiveMessageCommand({
     QueueUrl: QUEUE_URL,
     MaxNumberOfMessages: 1,
     WaitTimeSeconds: WAIT_SECONDS,
     VisibilityTimeout: VISIBILITY_SECONDS // 初期可視性
-  }));
+  }), {abortSignal: inFlight.signal});
   return res.Messages?.[0];
 }
 
@@ -131,10 +133,17 @@ async function mainLoop() {
 }
 
 if (require.main === module) {
-  process.on("SIGINT",   () => { logger.warn("SIGINT");   stopping = true; });
-  process.on("SIGBREAK", () => { logger.warn("SIGBREAK"); stopping = true; });
-  process.on("SIGHUP",   () => { logger.warn("SIGHUP");   stopping = true; });
-  process.on("SIGTERM",  () => { logger.warn("SIGTERM");  stopping = true; });
+  ["SIGINT","SIGBREAK","SIGHUP","SIGTERM"].forEach(s => {
+    process.on(s, ()=>{
+      logger.warn(`signal ${s} received`)
+      stopping = true;
+      inFlight?.abort();
+    })
+  });
+  process.on("beforeExit", () => {
+    logger.warn("beforeExit");
+    stopping = true;
+  });
 
   mainLoop().catch(err => {
     logger.fatal("[FATAL]", err);
