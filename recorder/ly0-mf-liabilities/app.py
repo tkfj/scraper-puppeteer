@@ -27,7 +27,7 @@ def main(event:any):
         'Body': b_event,
     })
 
-def lambda_handler(event, context):
+def handler(event, context):
     main(event)
     return {
         'statusCode': 200,

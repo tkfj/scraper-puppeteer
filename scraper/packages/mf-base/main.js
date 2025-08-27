@@ -21,7 +21,7 @@ async function launch_and_loggin(launchOptions = undefined) {
     if (fs.existsSync(mf_cookie_path)) { //TODO ファイルチェックしないで読みにいく。特定エラーが返ってきたらファイルは存在しない判断
       const readcookies=JSON.parse(fs.readFileSync(mf_cookie_path, 'utf-8'));
       for (let cookie of readcookies) {
-        await page.setCookie(cookie);
+        await browser.setCookie(cookie);
       }
       logger.info('cookies found');
     }

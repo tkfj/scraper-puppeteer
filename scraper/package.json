@@ -16,5 +16,7 @@
     "mf-login": "node apps/mf-login/main.js",
     "site-mf": "node apps/integrator/main.js scraper-mf"
   },
-  "dependencies": {}
+  "dependencies": {
+    "aws-sdk": "^2.1692.0"
+  }
 }

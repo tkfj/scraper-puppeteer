@@ -2,10 +2,11 @@
 
 const logger = require("@pkg/logger").getLogger("scraper-mf-liability")
 const mf_base = require("@pkg/mf-base");
-const fs = require("fs");
 
-// 負債を収集する
-async function scraper_mf_liability() {
+async function pre_mf_liability() {
+    return {}
+}
+async function scraper_mf_liability(ctx) {
     const {
         puppeteer,
         browser,
@@ -141,7 +142,27 @@ async function scraper_mf_liability() {
     // logger.info(JSON.stringify(outdict,null,2));
     //fs.writeFileSync('./data_liability/data_liability_'+dt_str+'.json', JSON.stringify(outdict,null,2));
     logger.info('done');
+    await page.close()
     return outdict
+}
+async function post_mf_liability(ctx,data) {
+    const AWS = require("aws-sdk");
+    const lambda = new AWS.Lambda();
+    const fncName = "scrpu-dev-put-ly0-mf-liabilities" //FIXME
+
+    logger.info("store start")
+    const res = await lambda.invoke({
+        FunctionName: fncName,
+        InvocationType: "RequestResponse", 
+        LogType: "Tail",
+        Payload:JSON.stringify(data),
+    }).promise()
+    if (res.FunctionError) {
+        throw new Error(`Lambda FunctionError ${fncName} ${res.Payload && res.Payload.toString()}`);
+    }
+    const result = res.Payload ? JSON.parse(res.Payload.toString()) : null;
+    const logs = res.LogResult ? Buffer.from(res.LogResult, "base64").toString("utf-8") : undefined;
+    logger.info("store done")
 }
 const scraper_key_mf_liability = "mf-liability";
 
@@ -163,6 +184,8 @@ if (require.main === module) {
 
 
 module.exports = {
+    pre_mf_liability,
     scraper_mf_liability,
+    post_mf_liability,
     scraper_key_mf_liability,
 };

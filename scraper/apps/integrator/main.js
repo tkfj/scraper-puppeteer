@@ -8,12 +8,16 @@ const {
 } = require("@aws-sdk/client-sqs");
 
 const {
+  pre_mf_aggregation_queue,
   scraper_mf_aggregation_queue,
+  post_mf_aggregation_queue,
   scraper_key_mf_aggregation_queue,
 } = require("@app/scraper-mf-aggregation_queue");
 
 const {
+  pre_mf_liability,
   scraper_mf_liability,
+  post_mf_liability,
   scraper_key_mf_liability,
 } = require("@app/scraper-mf-liability");
 
@@ -42,11 +46,14 @@ async function runPuppeteerJob(payload) {
   logger.info(`[JOB] start: ${scraper_key}`);
   try {
     if (scraper_key == scraper_key_mf_aggregation_queue) {
-      await scraper_mf_aggregation_queue();
+      const ctx = await pre_mf_aggregation_queue();
+      const data = await scraper_mf_aggregation_queue(ctx);
+      await post_mf_aggregation_queue(ctx,data);
     }
     else if (scraper_key == scraper_key_mf_liability) {
-      const liabilities = await scraper_mf_liability();
-      //TODO call lambda 
+      const ctx = await pre_mf_liability();
+      const data = await scraper_mf_liability(ctx);
+      await post_mf_liability(ctx,data);
     }
     else {
       throw new Error(`unknown scraper: ${scraper_key}`)
