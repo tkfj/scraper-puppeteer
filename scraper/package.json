@@ -17,6 +17,8 @@
     "site-mf": "node apps/integrator/main.js scraper-mf"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.876.0",
+    "@aws-sdk/client-sqs": "^3.876.0",
     "aws-sdk": "^2.1692.0"
   }
 }

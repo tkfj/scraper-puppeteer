@@ -1,5 +1,6 @@
 'use strict;'
 
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const logger = require("@pkg/logger").getLogger("scraper-mf-liability")
 const mf_base = require("@pkg/mf-base");
 
@@ -76,14 +77,14 @@ async function scraper_mf_liability(ctx) {
         let n_th=await n.$('th')
         let n_td1=await n.$('td:nth-of-type(1)');
         // let n_td2=await n.$('td:nth-of-type(2)');
-        let v_break_down_k=await (await n_th.getProperty('textContent')).jsonValue();
+        let v_break_down_t=await (await n_th.getProperty('textContent')).jsonValue();
         let v_break_down_v=await (await n_td1.getProperty('textContent')).jsonValue();
-        v_break_down_k=v_break_down_k.trim();
+        v_break_down_t=v_break_down_t.trim();
         v_break_down_v=v_break_down_v.trim();
-        // console.log(v_break_down_k);
+        // console.log(v_break_down_t);
         // console.log(v_break_down_v);
         v_break_downs.push({
-            "k":v_break_down_k,
+            "t":v_break_down_t,
             "v":v_break_down_v,
         });
     }
@@ -146,22 +147,29 @@ async function scraper_mf_liability(ctx) {
     return outdict
 }
 async function post_mf_liability(ctx,data) {
-    const AWS = require("aws-sdk");
-    const lambda = new AWS.Lambda();
-    const fncName = "scrpu-dev-put-ly0-mf-liabilities" //FIXME
+    const bucketName = "scrpu-dev-dwh" //FIXME
+    const keyPrefix = "test/" //FIXME
 
     logger.info("store start")
-    const res = await lambda.invoke({
-        FunctionName: fncName,
-        InvocationType: "RequestResponse", 
-        LogType: "Tail",
-        Payload:JSON.stringify(data),
-    }).promise()
-    if (res.FunctionError) {
-        throw new Error(`Lambda FunctionError ${fncName} ${res.Payload && res.Payload.toString()}`);
-    }
-    const result = res.Payload ? JSON.parse(res.Payload.toString()) : null;
-    const logs = res.LogResult ? Buffer.from(res.LogResult, "base64").toString("utf-8") : undefined;
+
+    const jst = new Date(new Date().getTime() + 9 * 60 * 60 * 1000); //TODO スクレイピングでdate作ってるところと合わせよう
+    const YYYY = jst.getUTCFullYear();
+    const MM   = String(jst.getUTCMonth() + 1).padStart(2, '0');
+    const DD   = String(jst.getUTCDate()).padStart(2, '0');
+    const hh   = String(jst.getUTCHours()).padStart(2, '0');
+    const mm   = String(jst.getUTCMinutes()).padStart(2, '0');
+    const ss   = String(jst.getUTCSeconds()).padStart(2, '0');
+    const mmm  = String(jst.getUTCMilliseconds()).padStart(3, '0');
+    data['ingest'] = `${YYYY}${MM}${DD}_${hh}${mm}${ss}_${mmm}`; // 例: 20250828_153012_047
+
+    const s3 = new S3Client();
+    const body = Buffer.from(JSON.stringify(data));
+    const res = await s3.send(new PutObjectCommand({
+        Bucket: bucketName,
+        Key: `${keyPrefix}ly0/liabilities/ingest=${data["ingest"]}/liabilities_${data["date"]}.json`,
+        Body: body,
+        ContentType: 'application/json; charset=utf-8',
+    }));
     logger.info("store done")
 }
 const scraper_key_mf_liability = "mf-liability";
