@@ -3,10 +3,10 @@
 const logger = require("@pkg/logger").getLogger("scraper-mf-aggregation_queue")
 const mf_base = require("@pkg/mf-base");
 
-async function pre_mf_aggregation_queue() {
+async function pre_mf_aggregation_queue(ctx) {
     return {}
 }
-async function scraper_mf_aggregation_queue(ctx) {
+async function scraper_mf_aggregation_queue(ctx,preData) {
     const {
         puppeteer,
         browser,
@@ -66,7 +66,7 @@ async function scraper_mf_aggregation_queue(ctx) {
     // await browser.close();
     return {}
 };
-async function post_mf_aggregation_queue(ctx,data) {
+async function post_mf_aggregation_queue(ctx,preData,data) {
 }
 const scraper_key_mf_aggregation_queue = "mf-aggregation_queue";
 

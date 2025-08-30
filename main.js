@@ -282,7 +282,7 @@ async function aggregation_queue(browser, page) {
 
     const lb=await page.waitForSelector(loding_selector,{timeout:1000}).catch(()=>{});
     if(lb){
-        console.info('ローディング中なのでスキップ');
+        console.info('ローディング中なのでスキップ'); //　TODO　これをエラーとするか。
         return;
     }
 

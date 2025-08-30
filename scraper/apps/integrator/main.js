@@ -37,23 +37,23 @@ if (!QUEUE_URL) {
 
 const sqs = new SQSClient({ region: REGION });
 
-async function runPuppeteerJob(payload) {
-  logger.trace(payload);
-  const scraper_key = payload.key;
-  if (! scraper_key) {
-    throw new Error("key not found")
-  }
-  logger.info(`[JOB] start: ${scraper_key}`);
+async function runPuppeteerJob(ctx) {
+  logger.trace(ctx);
   try {
+    const scraper_key = ctx.key;
+    if (! scraper_key) {
+      throw new Error("key not found")
+    }
+    logger.info(`[JOB] start: ${scraper_key}`);
     if (scraper_key == scraper_key_mf_aggregation_queue) {
-      const ctx = await pre_mf_aggregation_queue();
-      const data = await scraper_mf_aggregation_queue(ctx);
-      await post_mf_aggregation_queue(ctx,data);
+      const preData = await pre_mf_aggregation_queue(ctx);
+      const data = await scraper_mf_aggregation_queue(ctx, preData);
+      await post_mf_aggregation_queue(ctx,preData,data);
     }
     else if (scraper_key == scraper_key_mf_liability) {
-      const ctx = await pre_mf_liability();
-      const data = await scraper_mf_liability(ctx);
-      await post_mf_liability(ctx,data);
+      const preData = await pre_mf_liability(ctx);
+      const data = await scraper_mf_liability(ctx, preData);
+      await post_mf_liability(ctx,preData,data);
     }
     else {
       throw new Error(`unknown scraper: ${scraper_key}`)
@@ -61,6 +61,7 @@ async function runPuppeteerJob(payload) {
     logger.info(`[JOB] done: ${scraper_key}`);
   } catch (e) {
     logger.error("[JOB] error:", e);
+    throw e;
   }
 }
 

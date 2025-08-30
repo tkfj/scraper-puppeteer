@@ -4,10 +4,10 @@ const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const logger = require("@pkg/logger").getLogger("scraper-mf-liability")
 const mf_base = require("@pkg/mf-base");
 
-async function pre_mf_liability() {
+async function pre_mf_liability(ctx) {
     return {}
 }
-async function scraper_mf_liability(ctx) {
+async function scraper_mf_liability(ctx,preData) {
     const {
         puppeteer,
         browser,
@@ -146,9 +146,10 @@ async function scraper_mf_liability(ctx) {
     await page.close()
     return outdict
 }
-async function post_mf_liability(ctx,data) {
+async function post_mf_liability(ctx,preData,data) {
     const bucketName = "scrpu-dev-dwh" //FIXME
     const keyPrefix = "test/" //FIXME
+    const s3 = new S3Client();
 
     logger.info("store start")
 
@@ -162,14 +163,29 @@ async function post_mf_liability(ctx,data) {
     const mmm  = String(jst.getUTCMilliseconds()).padStart(3, '0');
     data['ingest'] = `${YYYY}${MM}${DD}_${hh}${mm}${ss}_${mmm}`; // 例: 20250828_153012_047
 
-    const s3 = new S3Client();
     const body = Buffer.from(JSON.stringify(data));
+    const key = `${keyPrefix}ly0/liabilities/ingest=${data["ingest"]}/liabilities_${data["date"]}.json`
+    const s3fullpath = `s3://${bucketName}/${key}`
+    logger.info(s3fullpath)
+    const metadata = {
+        'key': ctx['key'],
+    }
+    if (ctx['executionName']) {
+        metadata['scrpu-execution-name'] = ctx['executionName'];
+    } 
     const res = await s3.send(new PutObjectCommand({
         Bucket: bucketName,
-        Key: `${keyPrefix}ly0/liabilities/ingest=${data["ingest"]}/liabilities_${data["date"]}.json`,
+        Key: key,
         Body: body,
         ContentType: 'application/json; charset=utf-8',
+        Metadata: metadata,
     }));
+    if (res['ETag']) {
+        logger.debug(`ETag: ${res["ETag"]}`);
+    }
+    else {
+        throw new Error(`S3アップロード失敗 ${s3fullpath}`);
+    }
     logger.info("store done")
 }
 const scraper_key_mf_liability = "mf-liability";
@@ -189,7 +205,6 @@ if (require.main === module) {
     })();
 
 }
-
 
 module.exports = {
     pre_mf_liability,
