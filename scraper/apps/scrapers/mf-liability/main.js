@@ -143,8 +143,9 @@ async function scraper_mf_liability(ctx,preData) {
     // logger.info(JSON.stringify(outdict,null,2));
     //fs.writeFileSync('./data_liability/data_liability_'+dt_str+'.json', JSON.stringify(outdict,null,2));
     logger.info('done');
-    await page.close()
-    return outdict
+    await page.close();
+    await browser.close();
+    return outdict;
 }
 async function post_mf_liability(ctx,preData,data) {
     const bucketName = "scrpu-dev-dwh" //FIXME
@@ -161,14 +162,17 @@ async function post_mf_liability(ctx,preData,data) {
     const mm   = String(jst.getUTCMinutes()).padStart(2, '0');
     const ss   = String(jst.getUTCSeconds()).padStart(2, '0');
     const mmm  = String(jst.getUTCMilliseconds()).padStart(3, '0');
-    data['ingest'] = `${YYYY}${MM}${DD}_${hh}${mm}${ss}_${mmm}`; // 例: 20250828_153012_047
+    s_ingest = `${YYYY}${MM}${DD}_${hh}${mm}${ss}_${mmm}`; // 例: 20250828_153012_047
+    s_asof = data['date']
 
     const body = Buffer.from(JSON.stringify(data));
-    const key = `${keyPrefix}ly0/liabilities/ingest=${data["ingest"]}/liabilities_${data["date"]}.json`
+    const key = `${keyPrefix}ly0/liabilities/ingest=${s_ingest}/asof=${s_asof}/liabilities_${s_asof}.json`
     const s3fullpath = `s3://${bucketName}/${key}`
     logger.info(s3fullpath)
     const metadata = {
         'key': ctx['key'],
+        'ingest': s_ingest,
+        'asof': s_asof,
     }
     if (ctx['executionName']) {
         metadata['scrpu-execution-name'] = ctx['executionName'];

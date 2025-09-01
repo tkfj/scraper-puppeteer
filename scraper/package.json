@@ -19,6 +19,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.876.0",
     "@aws-sdk/client-sqs": "^3.876.0",
-    "aws-sdk": "^2.1692.0"
+    "aws-sdk": "^2.1692.0",
+    "iconv-lite": "^0.7.0"
   }
 }

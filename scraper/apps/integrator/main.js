@@ -20,6 +20,12 @@ const {
   post_mf_liability,
   scraper_key_mf_liability,
 } = require("@app/scraper-mf-liability");
+const {
+  scraper_key_mf_bs_history,
+  pre_mf_bs_history,
+  scraper_mf_bs_history,
+  post_mf_bs_history,
+} = require("../scrapers/mf-bs_history/main");
 
 // --- 設定（環境変数で上書き可能） ---
 const REGION = process.env.SCRAPER_REGION || process.env.AWS_DEFAULT_REGION || "ap-northeast-1";
@@ -54,6 +60,11 @@ async function runPuppeteerJob(ctx) {
       const preData = await pre_mf_liability(ctx);
       const data = await scraper_mf_liability(ctx, preData);
       await post_mf_liability(ctx,preData,data);
+    }
+    else if (scraper_key == scraper_key_mf_bs_history) {
+      const preData = await pre_mf_bs_history(ctx);
+      const data = await scraper_mf_bs_history(ctx, preData);
+      await post_mf_bs_history(ctx,preData,data);
     }
     else {
       throw new Error(`unknown scraper: ${scraper_key}`)
