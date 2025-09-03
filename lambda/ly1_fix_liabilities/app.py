@@ -6,10 +6,10 @@ from uuid import uuid4
 
 def lambda_handler(event, context):
     SRC_DB      = os.getenv("SRC_DB")      or "scrpu_ly1"
-    SRC_TABLE   = os.getenv("SRC_TABLE")   or "wk1_liabilities_ttl"
+    SRC_TABLE   = os.getenv("SRC_TABLE")   or "wk1_liabilities_breakdown"
     DEST_DB     = os.getenv("DEST_DB")     or "scrpu_ly1"
-    DEST_TABLE  = os.getenv("DEST_TABLE")  or "fix_liabilities_ttl"
-    WORKGROUP   = os.getenv("WORKGROUP")   or "wg_scrpu_dev"   # Athena SQL v3
+    DEST_TABLE  = os.getenv("DEST_TABLE")  or "fix_liabilities_breakdown"
+    WORKGROUP   = os.getenv("WORKGROUP")   or "wg_scrpu_dev"
 
     ICEBERG_STAGE = f"s3://scrpu-dev-dwh/tmp_iceberg_stage/{uuid4()}/"
 
@@ -24,7 +24,7 @@ def lambda_handler(event, context):
     # filter
     mask = df["ingest_ts"].eq(df.groupby("asof_ts")["ingest_ts"].transform("max"))
     df_f = df.loc[mask].reset_index(drop=True)
-    cols = ["dt", "dt_ts", "ttl"]
+    cols = ["dt", "dt_ts", "category", "amount"]
     df_out = df_f.rename(columns={"asof": "dt", "asof_ts": "dt_ts"}).reindex(columns=cols)
 
     # delete old dst
