@@ -122,7 +122,7 @@ async function scraper_mf_bs_history(ctx,preData) {
 }
 async function post_mf_bs_history(ctx,preData,data) {
     const bucketName = "scrpu-dev-dwh" //FIXME
-    const keyPrefix = "test/" //FIXME
+    const keyPrefix = "" //"test/" //FIXME
     const s3 = new S3Client();
 
     const b_content = fs.readFileSync(data['path']);

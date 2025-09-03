@@ -149,7 +149,7 @@ async function scraper_mf_liability(ctx,preData) {
 }
 async function post_mf_liability(ctx,preData,data) {
     const bucketName = "scrpu-dev-dwh" //FIXME
-    const keyPrefix = "test/" //FIXME
+    const keyPrefix = "" //"test/" //FIXME
     const s3 = new S3Client();
 
     logger.info("store start")
