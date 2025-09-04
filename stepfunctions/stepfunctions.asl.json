@@ -1,0 +1,257 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "Ly0Ly1",
+    "States": {
+        "Ly0Ly1": {
+            "Type": "Parallel",
+            "Branches": [
+                {
+                    "StartAt": "Ly0Ly1Liabilities",
+                    "States": {
+                        "Ly0Ly1Liabilities": {
+                            "Type": "Parallel",
+                            "Branches": [
+                                {
+                                    "StartAt": "WaitQLiabiliry",
+                                    "States": {
+                                        "WaitQLiabiliry": {
+                                            "Type": "Wait",
+                                            "Seconds": 10,
+                                            "Next": "SendQLy0Liabilitiy"
+                                        },
+                                        "SendQLy0Liabilitiy": {
+                                            "Type": "Task",
+                                            "Resource": "arn:aws:states:::sqs:sendMessage",
+                                            "Parameters": {
+                                                "QueueUrl": "${sqs_url}",
+                                                "MessageBody": {
+                                                    "key": "mf-liability",
+                                                    "retryCount.$": "$$.State.RetryCount",
+                                                    "stateEnteredTime.$": "$$.State.EnteredTime",
+                                                    "executionName.$": "$$.Execution.Name"
+                                                }
+                                            },
+                                            "TimeoutSeconds": 60,
+                                            "End": true
+                                        }
+                                    }
+                                },
+                                {
+                                    "StartAt": "WaitForLiabilitiy",
+                                    "States": {
+                                        "WaitForLiabilitiy": {
+                                            "Type": "Task",
+                                            "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                                            "Parameters": {
+                                                "FunctionName": "${lambda_ly0_wait_arn}:$LATEST",
+                                                "Payload": {
+                                                    "key": "mf-liability",
+                                                    "stateName.$": "$$.State.Name",
+                                                    "stateTime.$": "$$.State.EnteredTime",
+                                                    "taskToken.$": "$$.Task.Token",
+                                                    "executionName.$": "$$.Execution.Name"
+                                                }
+                                            },
+                                            "Assign": {
+                                                "liabilities_bucket.$": "$.bucket",
+                                                "liabilities_key.$": "$.key"
+                                            },
+                                            "Next": "Ly1Wk1Liabilities",
+                                            "TimeoutSeconds": 900
+                                        },
+                                        "Ly1Wk1Liabilities": {
+                                            "Type": "Task",
+                                            "Resource": "arn:aws:states:::lambda:invoke",
+                                            "Parameters": {
+                                                "FunctionName": "${lambda_ly1_wk1_liabilities_arn}:$LATEST",
+                                                "Payload.$": "$"
+                                            },
+                                            "Next": "Ly1FixLiabilities",
+                                            "OutputPath": "$.Payload",
+                                            "TimeoutSeconds": 900
+                                        },
+                                        "Ly1FixLiabilities": {
+                                            "Type": "Task",
+                                            "Resource": "arn:aws:states:::lambda:invoke",
+                                            "OutputPath": "$.Payload",
+                                            "Parameters": {
+                                                "FunctionName": "${lambda_ly1_fix_liabilities_arn}:$LATEST"
+                                            },
+                                            "TimeoutSeconds": 900,
+                                            "End": true
+                                        }
+                                    }
+                                }
+                            ],
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "Ly0Ly1Assets",
+                    "States": {
+                        "Ly0Ly1Assets": {
+                            "Type": "Parallel",
+                            "Branches": [
+                                {
+                                    "StartAt": "WaitQBsHistory",
+                                    "States": {
+                                        "WaitQBsHistory": {
+                                            "Type": "Wait",
+                                            "Seconds": 10,
+                                            "Next": "SendQBsHistory"
+                                        },
+                                        "SendQBsHistory": {
+                                            "Type": "Task",
+                                            "Resource": "arn:aws:states:::sqs:sendMessage",
+                                            "Parameters": {
+                                                "QueueUrl": "${sqs_url}",
+                                                "MessageBody": {
+                                                    "key": "mf-bs_history",
+                                                    "retryCount.$": "$$.State.RetryCount",
+                                                    "stateEnteredTime.$": "$$.State.EnteredTime",
+                                                    "executionName.$": "$$.Execution.Name"
+                                                }
+                                            },
+                                            "End": true,
+                                            "TimeoutSeconds": 60
+                                        }
+                                    }
+                                },
+                                {
+                                    "StartAt": "WaitForBsHistory",
+                                    "States": {
+                                        "WaitForBsHistory": {
+                                            "Type": "Task",
+                                            "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                                            "Parameters": {
+                                                "FunctionName": "${lambda_ly0_wait_arn}:$LATEST",
+                                                "Payload": {
+                                                    "key": "mf-bs_history",
+                                                    "stateName.$": "$$.State.Name",
+                                                    "stateTime.$": "$$.State.EnteredTime",
+                                                    "taskToken.$": "$$.Task.Token",
+                                                    "executionName.$": "$$.Execution.Name"
+                                                }
+                                            },
+                                            "TimeoutSeconds": 900,
+                                            "Next": "Ly1Wk1Assets"
+                                        },
+                                        "Ly1Wk1Assets": {
+                                            "Type": "Task",
+                                            "Resource": "arn:aws:states:::lambda:invoke",
+                                            "Parameters": {
+                                                "FunctionName": "${lambda_ly1_wk1_assets_arn}:$LATEST",
+                                                "Payload.$": "$"
+                                            },
+                                            "OutputPath": "$.Payload",
+                                            "TimeoutSeconds": 900,
+                                            "Next": "Ly1Wk2Assets"
+                                        },
+                                        "Ly1Wk2Assets": {
+                                            "Type": "Task",
+                                            "Resource": "arn:aws:states:::lambda:invoke",
+                                            "Parameters": {
+                                                "FunctionName": "${lambda_ly1_wk2_assets_arn}:$LATEST",
+                                                "Payload.$": "$"
+                                            },
+                                            "OutputPath": "$.Payload",
+                                            "TimeoutSeconds": 900,
+                                            "Next": "Ly1FixAssets"
+                                        },
+                                        "Ly1FixAssets": {
+                                            "Type": "Task",
+                                            "Resource": "arn:aws:states:::lambda:invoke",
+                                            "Parameters": {
+                                                "FunctionName": "${lambda_ly1_fix_assets_arn}:$LATEST"
+                                            },
+                                            "OutputPath": "$.Payload",
+                                            "TimeoutSeconds": 900,
+                                            "End": true
+                                        }
+                                    }
+                                }
+                            ],
+                            "End": true
+                        }
+                    }
+                }
+            ],
+            "Next": "BI"
+        },
+        "BI": {
+            "Type": "Parallel",
+            "Branches": [
+                {
+                    "StartAt": "BiBsCash",
+                    "States": {
+                        "BiBsCash": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:states:::lambda:invoke",
+                            "Parameters": {
+                                "FunctionName": "${lambda_bi_refresh_arn}:$LATEST",
+                                "Payload": {
+                                    "dataset": "c1cd8e86-3c53-4c15-94f0-75c0e0d17fa6",
+                                    "note": "vw_bs_cash"
+                                }
+                            },
+                            "OutputPath": "$.Payload",
+                            "TimeoutSeconds": 900,
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "BiBsExre",
+                    "States": {
+                        "BiBsExre": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:states:::lambda:invoke",
+                            "Parameters": {
+                                "FunctionName": "${lambda_bi_refresh_arn}:$LATEST",
+                                "Payload": {
+                                    "dataset": "22f2e818-ab25-4636-b022-b16e82cb0fb6",
+                                    "note": "vw_bs_exre"
+                                }
+                            },
+                            "OutputPath": "$.Payload",
+                            "TimeoutSeconds": 900,
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "BiBsFull",
+                    "States": {
+                        "BiBsFull": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:states:::lambda:invoke",
+                            "Parameters": {
+                                "FunctionName": "${lambda_bi_refresh_arn}:$LATEST",
+                                "Payload": {
+                                    "dataset": "af283096-92ab-4535-866a-6ba10bae9216",
+                                    "note": "vw_bs_full"
+                                }
+                            },
+                            "OutputPath": "$.Payload",
+                            "TimeoutSeconds": 900,
+                            "End": true
+                        }
+                    }
+                }
+            ],
+            "Next": "SQS SendMessage"
+        },
+        "SQS SendMessage": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::sqs:sendMessage",
+            "Parameters": {
+                "QueueUrl": "${sqs_loggingchatbot_url}",
+                "MessageBody": "BSを更新しました"
+            },
+            "End": true
+        }
+    },
+    "QueryLanguage": "JSONPath",
+    "TimeoutSeconds": 1800
+}
